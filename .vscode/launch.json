@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "startingfive (phone)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "deviceId": "R8VXA00FY4Y",
+            "flutterMode": "debug"
+        }
+    ]
+}
