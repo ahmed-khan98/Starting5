@@ -8,6 +8,7 @@ import 'all_announcements_screen.dart';
 import 'announcements_screen.dart';
 import 'single_workout_pass.dart';
 import 'package:html_unescape/html_unescape.dart';
+import '../widgets/full_bleed_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -53,7 +54,13 @@ class _HomeScreenState extends State<HomeScreen> {
             _bannerInfo = results[0]['data'];
             _announcements = _bannerInfo['data'];
           }
-          if (results[1]['success']) _apiPrograms = results[1]['data'];
+          if (results[1]['success']) {
+            final programs = List<dynamic>.from(results[1]['data'] as List);
+            programs.sort(
+              (a, b) => _programDisplayOrder(a).compareTo(_programDisplayOrder(b)),
+            );
+            _apiPrograms = programs;
+          }
           _isLoading = false;
         });
         _startAutoSlider();
@@ -61,6 +68,21 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Top to bottom: Clinic, Monthly, three shootouts, Open Shooting, Daily Pass.
+  int _programDisplayOrder(dynamic data) {
+    final text = '${data['title'] ?? ''} ${data['acf_title'] ?? ''}'.toLowerCase();
+    if (text.contains('clinic') || text.contains('halloween')) return 0;
+    if (text.contains('development') || text.contains('monthly')) return 10;
+    if (text.contains('shootout')) {
+      if (text.contains('girl')) return 23;
+      if (text.contains('junior')) return 22;
+      return 21;
+    }
+    if (text.contains('open shooting')) return 30;
+    if (text.contains('daily') || text.contains('workout')) return 50;
+    return 40;
   }
 
   void _startAutoSlider() {
@@ -748,23 +770,7 @@ Widget _buildDynamicProgramCard(dynamic data) {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(25),
               ),
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                fit: BoxFit.fitWidth,
-                frameBuilder: (context, child, frame, _) => frame == null
-                    ? Container(
-                        width: double.infinity,
-                        height: 220,
-                        color: Colors.grey[200],
-                      )
-                    : child,
-                errorBuilder: (c, e, s) => Container(
-                  width: double.infinity,
-                  height: 220,
-                  color: Colors.grey[200],
-                ),
-              ),
+              child: FullBleedImage(url: imageUrl),
             )
           else
             const SizedBox(height: 0),

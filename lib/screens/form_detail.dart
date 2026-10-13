@@ -5,6 +5,7 @@ import 'register_form.dart';
 import 'dynamic_registration_form.dart'; 
 import '../services/api_service.dart';
 import 'package:flutter_html/flutter_html.dart';
+import '../widgets/full_bleed_image.dart';
 
 class FormDetailScreen extends StatefulWidget {
   final String postId;
@@ -150,17 +151,7 @@ class _FormDetailScreenState extends State<FormDetailScreen> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  mainImage,
-                  width: double.infinity,
-                  fit: BoxFit.fitWidth,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: double.infinity,
-                    height: 220,
-                    color: const Color(0xffF4F6F9),
-                    child: const Icon(Icons.sports_basketball, color: Color(0xFFE65100), size: 60),
-                  ),
-                ),
+                child: FullBleedImage(url: mainImage),
               ),
             ),
 
