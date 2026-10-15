@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import '../services/api_service.dart';
 import '../services/session_manager.dart';
@@ -214,15 +215,23 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
     );
   }
 
+  bool _looksLikePhone(_DynamicField field) {
+    final name = field.name.toLowerCase().trim();
+    final label = field.label.toLowerCase();
+    if (name == 'emergency_contact_name') return false;
+    if (field.type == 'phone' || field.type == 'tel') return true;
+    if (name == 'phonenumber' || name == 'emergency_contact') return true;
+    return label.contains('phone') || label.contains('cell') || label.contains('mobile');
+  }
+
   Widget _buildTextField(_DynamicField field) {
     final controller = _controllers[field.name];
     if (controller == null) return const SizedBox.shrink();
 
-    final keyboardType = switch (field.type) {
-      'email' => TextInputType.emailAddress,
-      'phone' => TextInputType.phone,
-      _ => TextInputType.text,
-    };
+    final isPhoneField = _looksLikePhone(field);
+    final keyboardType = field.type == 'email'
+        ? TextInputType.emailAddress
+        : (isPhoneField ? TextInputType.phone : TextInputType.text);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -233,10 +242,16 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
-            textCapitalization: field.type == 'email' || field.type == 'phone'
+            textCapitalization: field.type == 'email' || isPhoneField
                 ? TextCapitalization.none
                 : TextCapitalization.words,
             style: const TextStyle(fontSize: 15),
+            inputFormatters: [
+              if (isPhoneField) ...[
+                FilteringTextInputFormatter.digitsOnly,
+                CustomPhoneTextInputFormatter(),
+              ],
+            ],
             decoration: InputDecoration(
               hintText: _meaningfulLabel(field.label, field.name) ?? '',
               hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
@@ -247,6 +262,12 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
             validator: (value) {
               if (field.required && (value == null || value.trim().isEmpty)) {
                 return 'Required';
+              }
+              if (isPhoneField && value != null && value.trim().isNotEmpty) {
+                final digitsOnly = value.replaceAll(RegExp(r'\D'), '');
+                if (digitsOnly.length != 10) {
+                  return 'Must be exactly 10 digits.';
+                }
               }
               return null;
             },
@@ -341,7 +362,8 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
 
   Widget _buildCheckbox(_DynamicField field) {
     final options = _checkboxOptions(field);
-    final heading = field.options.isEmpty ? null : _meaningfulLabel(field.label, field.name);
+    final hideHeading = '${field.name} ${field.label}'.toLowerCase().contains('waiver');
+    final heading = hideHeading ? null : (field.options.isEmpty ? null : _meaningfulLabel(field.label, field.name));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -360,6 +382,9 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
               ...options.map((option) {
                 final key = _checkKey(field.name, option.value);
                 final checked = _checks[key] == true;
+                final optionLabel = hideHeading && field.required && !option.label.trim().endsWith('*')
+                    ? '${option.label} *'
+                    : option.label;
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -375,7 +400,7 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: Text(
-                          option.label,
+                          optionLabel,
                           style: const TextStyle(fontSize: 14, color: Colors.blueGrey),
                         ),
                       ),
@@ -531,13 +556,54 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
     return _selectValues[name]?.trim() ?? '';
   }
 
+  bool _isClinicSessionField(_DynamicField field) {
+    final text = '${field.name} ${field.label}'.toLowerCase();
+    return text.contains('clinic') || text.contains('session');
+  }
+
+  /// 2nd–5th uses product 51101. 6th–8th uses product 51102.
+  String? _halloweenProductId(String text) {
+    final normalized = text.toLowerCase().replaceAll('–', '-').replaceAll('—', '-');
+    final olderGrade = normalized.contains('6th') ||
+        normalized.contains('8th') ||
+        RegExp(r'6\s*[-to]+\s*8').hasMatch(normalized);
+    final youngerGrade = normalized.contains('2nd') ||
+        normalized.contains('5th') ||
+        RegExp(r'2\s*[-to]+\s*5').hasMatch(normalized);
+    if (olderGrade && !youngerGrade) return '51102';
+    if (youngerGrade && !olderGrade) return '51101';
+    return null;
+  }
+
+  String _checkoutProductId() {
+    if (widget.formId.trim() != '51020') return widget.productId;
+
+    for (final field in _fields) {
+      if (field.type != 'select' || !_isClinicSessionField(field)) continue;
+      final selected = _selectValues[field.name]?.trim() ?? '';
+      if (selected.isEmpty) continue;
+
+      String label = selected;
+      for (final option in field.options) {
+        if (option.value == selected) {
+          label = option.label;
+          break;
+        }
+      }
+      final productId = _halloweenProductId('$label $selected');
+      if (productId != null) return productId;
+    }
+    return widget.productId;
+  }
+
   Future<void> _saveForm() async {
     setState(() => _isSaving = true);
     try {
+      final productId = _checkoutProductId();
       final data = <String, String>{
         "user_id": widget.userId,
         "form_id": widget.formId,
-        "product_id": widget.productId,
+        "product_id": productId,
       };
 
       for (final field in _fields) {
@@ -575,6 +641,12 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
         final String entryId = responsePayload['post_id']?.toString() ?? "";
 
         if (mounted) {
+          final programData = Map<String, dynamic>.from(widget.programData ?? {});
+          programData['product_id'] = productId;
+          if (widget.formId.trim() == '51020') {
+            final price = double.tryParse(programData['product_price']?.toString() ?? '') ?? 0;
+            if (price <= 0) programData['product_price'] = '75.00';
+          }
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -582,13 +654,13 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
                 entryId: entryId,
                 userId: widget.userId,
                 productTitle: widget.title,
-                productId: widget.productId,
+                productId: productId,
                 formId: widget.formId,
                 cityStr: _fieldValue('city'),
                 stateStr: _fieldValue('state'),
                 zipStr: _fieldValue('zipcode'),
                 phoneStr: _fieldValue('phonenumber'),
-                programData: widget.programData,
+                programData: programData,
               ),
             ),
           );
