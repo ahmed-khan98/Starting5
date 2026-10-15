@@ -54,13 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _bannerInfo = results[0]['data'];
             _announcements = _bannerInfo['data'];
           }
-          if (results[1]['success']) {
-            final programs = List<dynamic>.from(results[1]['data'] as List);
-            programs.sort(
-              (a, b) => _programDisplayOrder(a).compareTo(_programDisplayOrder(b)),
-            );
-            _apiPrograms = programs;
-          }
+          if (results[1]['success']) _apiPrograms = results[1]['data'];
           _isLoading = false;
         });
         _startAutoSlider();
@@ -68,21 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  /// Top to bottom: Clinic, Monthly, three shootouts, Open Shooting, Daily Pass.
-  int _programDisplayOrder(dynamic data) {
-    final text = '${data['title'] ?? ''} ${data['acf_title'] ?? ''}'.toLowerCase();
-    if (text.contains('clinic') || text.contains('halloween')) return 0;
-    if (text.contains('development') || text.contains('monthly')) return 10;
-    if (text.contains('shootout')) {
-      if (text.contains('girl')) return 23;
-      if (text.contains('junior')) return 22;
-      return 21;
-    }
-    if (text.contains('open shooting')) return 30;
-    if (text.contains('daily') || text.contains('workout')) return 50;
-    return 40;
   }
 
   void _startAutoSlider() {

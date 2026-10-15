@@ -362,7 +362,8 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
 
   Widget _buildCheckbox(_DynamicField field) {
     final options = _checkboxOptions(field);
-    final heading = field.options.isEmpty ? null : _meaningfulLabel(field.label, field.name);
+    final hideHeading = '${field.name} ${field.label}'.toLowerCase().contains('waiver');
+    final heading = hideHeading ? null : (field.options.isEmpty ? null : _meaningfulLabel(field.label, field.name));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -381,6 +382,9 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
               ...options.map((option) {
                 final key = _checkKey(field.name, option.value);
                 final checked = _checks[key] == true;
+                final optionLabel = hideHeading && field.required && !option.label.trim().endsWith('*')
+                    ? '${option.label} *'
+                    : option.label;
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -396,7 +400,7 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: Text(
-                          option.label,
+                          optionLabel,
                           style: const TextStyle(fontSize: 14, color: Colors.blueGrey),
                         ),
                       ),
@@ -639,6 +643,10 @@ class _DynamicRegistrationFormState extends State<DynamicRegistrationForm> {
         if (mounted) {
           final programData = Map<String, dynamic>.from(widget.programData ?? {});
           programData['product_id'] = productId;
+          if (widget.formId.trim() == '51020') {
+            final price = double.tryParse(programData['product_price']?.toString() ?? '') ?? 0;
+            if (price <= 0) programData['product_price'] = '75.00';
+          }
           Navigator.push(
             context,
             MaterialPageRoute(
