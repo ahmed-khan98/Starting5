@@ -1,15 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:startingfive/services/session_manager.dart';
-
-// Background Message Handler 
-@pragma('vm:entry-point')
-Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
-  
-  await Firebase.initializeApp();
-  print("Handling background message ID: ${message.messageId}");
-}
 
 class NotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
@@ -35,12 +26,16 @@ class NotificationService {
       print('User granted notification permissions.');
     }
 
-    // 2. Fetch the unique device Token
-    String? fcmToken = await _fcm.getToken();
-    print("FCM Device Token: $fcmToken");
-
-    print("FCM Token: $fcmToken");
-    await SessionManager.setFcmToken(fcmToken!);
+    // Token is often missing on iOS until Apple's push token arrives.
+    // A missing token must not stop the app from opening.
+    try {
+      final String? fcmToken = await _fcm.getToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await SessionManager.setFcmToken(fcmToken);
+      }
+    } catch (e) {
+      print("FCM token not ready: $e");
+    }
 
     // 3. Initialize Local Notifications for Foreground Alerts
     const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -59,8 +54,8 @@ class NotificationService {
   }
 
   void _initMessageHandlers() {
-    // Register the background handler
-    FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
+    // Background handler is registered once from main().
+    // Registering it again throws and closes the app.
 
     // Handler for when the app is in the foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {

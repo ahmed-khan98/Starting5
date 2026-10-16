@@ -28,31 +28,25 @@ void main() async {
 
   Stripe.merchantIdentifier = "merchant.com.ogrelogic.startingfive";
 
-  await Stripe.instance.applySettings();
+  try {
+    await Stripe.instance.applySettings();
+  } catch (e) {
+    print("Stripe init failed: $e");
+  }
 
   /// -----------------------------------
   /// FIREBASE INITIALIZATION
   /// -----------------------------------
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(
+      _firebaseMessagingBackgroundHandler,
+    );
+  } catch (e) {
+    print("Firebase init failed: $e");
+  }
 
-  
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-  
-  await NotificationService().initNotifications();
-
-  /// -----------------------------------
-  /// FIREBASE BACKGROUND HANDLER
-  /// -----------------------------------
-  FirebaseMessaging.onBackgroundMessage(
-    _firebaseMessagingBackgroundHandler,
-  );
-
-  /// -----------------------------------
-  /// SETUP FCM
-  /// -----------------------------------
-  await setupFCM();
-
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -64,6 +58,13 @@ void main() async {
   );
 
   runApp(const MyApp());
+
+  try {
+    await NotificationService().initNotifications();
+    await setupFCM();
+  } catch (e) {
+    print("Notification setup failed: $e");
+  }
 }
 
 Future<void> setupFCM() async {
