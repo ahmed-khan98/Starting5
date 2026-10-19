@@ -35,7 +35,12 @@ class _FormDetailScreenState extends State<FormDetailScreen> {
   }
 
   Future<void> _fetchProgramDetails() async {
-    final result = await ApiService.fetchProgramSingle(widget.postId);
+    Map<String, dynamic> result;
+    try {
+      result = await ApiService.fetchProgramSingle(widget.postId);
+    } catch (e) {
+      result = {'success': false, 'message': 'Could not load this program.'};
+    }
 
     if (mounted) {
       if (result['success'] == true) {

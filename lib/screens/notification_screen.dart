@@ -52,15 +52,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
       _errorMessage = "";
     });
 
-    final result = await ApiService.fetchNotificationList();
+    Map<String, dynamic> result;
+    try {
+      result = await ApiService.fetchNotificationList();
+    } catch (e) {
+      result = {'success': false};
+    }
 
     if (mounted) {
       setState(() {
         _isLoading = false;
         if (result['success'] == true) {
-          final List dynamicList = result['data'] ?? [];
+          final List dynamicList = result['data'] is List ? result['data'] : [];
           _notifications = dynamicList
-              .map((json) => NotificationModel.fromJson(json))
+              .whereType<Map>()
+              .map((json) => NotificationModel.fromJson(Map<String, dynamic>.from(json)))
               .toList();
         } else {
           _errorMessage = "No Notifications Found.";

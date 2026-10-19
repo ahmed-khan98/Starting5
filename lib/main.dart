@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:startingfive/screens/splash_screen.dart';
 import 'package:startingfive/services/notification_services.dart';
 import 'package:flutter/services.dart';
@@ -19,20 +18,6 @@ Future<void> _firebaseMessagingBackgroundHandler(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  /// -----------------------------------
-  /// STRIPE INITIALIZATION
-  /// -----------------------------------
-  Stripe.publishableKey = //"pk_live_N2Iv1VFI2TgItttTdlNMCMEA";
-      "pk_test_51JMWebSIh5ESgj82I81ylSfCNu87Z1monNQQonn79tpk9dzSvzwmNPwYuVpnefjbcZm0pY0kXok4IZLohBkXl5sr00yQPpJ3f0";
-
-  Stripe.merchantIdentifier = "merchant.com.ogrelogic.startingfive";
-
-  try {
-    await Stripe.instance.applySettings();
-  } catch (e) {
-    print("Stripe init failed: $e");
-  }
 
   /// -----------------------------------
   /// FIREBASE INITIALIZATION

@@ -96,20 +96,24 @@ class _SplashScreenState extends State<SplashScreen>
     /// Small delay after animation
     await Future.delayed(const Duration(milliseconds: 600));
 
-    if (_navigated) return;
+    if (_navigated || !mounted) return;
 
-    bool loggedIn = await SessionManager.isLoggedIn();
+    bool loggedIn = false;
+    try {
+      loggedIn = await SessionManager.isLoggedIn();
+    } catch (e) {
+      debugPrint("Splash session check failed: $e");
+    }
 
-    Widget nextScreen =
-    loggedIn ? const MainScreen() : const IntroScreen();
-
-    if (!mounted) return;
+    if (!mounted || _navigated) return;
 
     _navigated = true;
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => nextScreen),
+      MaterialPageRoute(
+        builder: (_) => loggedIn ? const MainScreen() : const IntroScreen(),
+      ),
     );
   }
 
@@ -138,6 +142,8 @@ class _SplashScreenState extends State<SplashScreen>
             child: Image.asset(
               'assets/splash_screen.jpg',
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const ColoredBox(color: Colors.black),
             ),
           ),
 
@@ -151,6 +157,8 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Image.asset(
                   'assets/logo.png',
                   width: logoSize,
+                  errorBuilder: (context, error, stackTrace) =>
+                      SizedBox(width: logoSize, height: logoSize),
                 ),
               ),
             ),
