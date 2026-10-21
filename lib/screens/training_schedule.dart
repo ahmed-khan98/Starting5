@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/session_manager.dart';
-import 'register_form.dart';
 import 'dynamic_registration_form.dart'; 
 import 'single_workout_pass.dart';
 
@@ -60,25 +59,16 @@ class _TrainingScheduleScreenState extends State<TrainingScheduleScreen> {
           final String productId = programData['product_id']?.toString() ?? targetPostId;
 
           final String registrationTitle = formName.isNotEmpty ? formName : programTitle;
-          final bool isHalloweenForm = formId.trim() == '51020';
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => isHalloweenForm
-                  ? DynamicRegistrationForm(
-                      productId: productId,
-                      title: registrationTitle,
-                      formId: formId.trim(),
-                      userId: userId ?? "",
-                      programData: programData,
-                    )
-                  : RegistrationForm(
-                      productId: productId,
-                      title: registrationTitle,
-                      formId: formId,
-                      userId: userId ?? "",
-                      programData: programData,
-                    ),
+              builder: (_) => DynamicRegistrationForm(
+                productId: productId,
+                title: registrationTitle,
+                formId: formId.trim(),
+                userId: userId ?? "",
+                programData: programData,
+              ),
             ),
           );
         } else {

@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'register_form.dart';
 import 'dynamic_registration_form.dart'; 
 import '../services/api_service.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -262,26 +261,16 @@ class _FormDetailScreenState extends State<FormDetailScreen> {
                             onPressed: () {
                               final String registrationTitle =
                                   formName.isNotEmpty ? formName : programTitle;
-                              // Halloween Skills Clinic only: Super Form 51020.
-                              final bool isHalloweenForm = formId.trim() == '51020';
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => isHalloweenForm
-                                      ? DynamicRegistrationForm(
-                                          productId: productId,
-                                          title: registrationTitle,
-                                          formId: formId.trim(),
-                                          userId: widget.userId,
-                                          programData: _programData,
-                                        )
-                                      : RegistrationForm(
-                                          productId: productId,
-                                          title: registrationTitle,
-                                          formId: formId,
-                                          userId: widget.userId,
-                                          programData: _programData,
-                                        ),
+                                  builder: (_) => DynamicRegistrationForm(
+                                    productId: productId,
+                                    title: registrationTitle,
+                                    formId: formId.trim(),
+                                    userId: widget.userId,
+                                    programData: _programData,
+                                  ),
                                 ),
                               );
                             },
